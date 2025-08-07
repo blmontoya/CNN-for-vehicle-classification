@@ -1,0 +1,12 @@
+# Ignore Python virtual environment
+pyv311/
+
+# Ignore training outputs
+runs/
+
+# Ignore dataset
+data/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc

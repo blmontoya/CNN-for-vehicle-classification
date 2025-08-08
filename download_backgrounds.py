@@ -3,9 +3,9 @@ import requests
 import random
 
 ACCESS_KEY = "REDACTED"
-query = "landscape"  # Change to whatever background type you want
+query = "landscapes"  # Change to whatever background type you want
 num_images = 200
-save_dir = "unsplash_backgrounds_test"
+save_dir = "unsplash_sedans"
 os.makedirs(save_dir, exist_ok=True)
 
 per_page = 30  # Max allowed by Unsplash API per request

@@ -4,7 +4,7 @@ As a starter project for BVC, I decided to create a CNN that learns to classify 
 
 In summary, I first learned/refreshed what I needed to know before testing my knowledge by looking at a CNN trained on MNIST. From there, I challenged myself to build a CNN that was trained on CIFAR-10. Afterwards, I learned to create my own dataset and used what I learned building the model trained on CIFAR-10 to build the vehicle classification CNN. 
 
-The onboarding document mentioned that it was important to track *how* I completed this project. I outlined my learning process and how I built up to this project in the google document below. It's a bit long since I used it to track the changes I made to the CIFAR-10 trained CNN, but I provided it to hopefully give a sense for how I built up my knowledge before starting this vehicle classification project.
+The onboarding document mentioned that it was important to track *how* I completed this project. I outlined my learning process and how I built up to this project in the google document below. It's a bit long since I used it to track the changes I made to the CIFAR-10 trained CNN, but I provided it to hopefully give a general sense for how I built up my knowledge before starting this vehicle classification project.
 
 https://docs.google.com/document/d/1ROZzTwASKhRkDvESkVaY4mZ_gMYwPbnKHhf1rgN9YE8/edit?usp=sharing
 

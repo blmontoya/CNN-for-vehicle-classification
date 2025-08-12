@@ -120,7 +120,7 @@ I wanted to see if I could increase the accuracy to consistently stay above 80% 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![Example Image 4](readmeimgs/losstest2.png)
 
-Despite the orange model still underperforming below 80% accuracy, but adjusting the cosine annealing helped the model. I removed the dropout rate of 0.3 after the ResNet block sequences but kept the adjusted cosine annealing. This seemed to work very well as depicted in the graphs below. The model consistently rested at the mid-80% accuracy mark and is the current model.
+Despite the orange model still underperforming below 80% accuracy, but adjusting the cosine annealing helped the model. I removed the dropout rate of 0.3 after the ResNet block sequences but kept the adjusted cosine annealing. This seemed to work very well as depicted in the graphs below.
 
 ![accuracy1](readmeimgs/accuracy3.png)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -132,6 +132,8 @@ Despite the orange model still underperforming below 80% accuracy, but adjusting
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![Example Image 4](readmeimgs/losstest3.png)
+
+The model consistently rested at the mid-80% accuracy mark and is the current model. In addition, testing and training loss seemed to be closer than previous models and the model was trained in the same time that it took to test the other models.
 
 ## Final Thoughts
 

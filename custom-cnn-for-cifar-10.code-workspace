@@ -1,9 +1,7 @@
 {
-	"folders": [
-		{
-			"name": "custom-cnn-for-cifar-10",
-			"path": "."
-		}
-	],
-	"settings": {}
+    "folders": [
+        {
+            "path": "."
+        }
+    ]
 }

@@ -89,6 +89,7 @@ class ResidualBlock(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(out_channels)
+        #self.dropout = nn.Dropout(0.3)
 
         # Shortcut connection to match shape if needed
         self.shortcut = nn.Sequential()
@@ -103,6 +104,7 @@ class ResidualBlock(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
+        #out = self.dropout(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
@@ -302,7 +304,7 @@ warmup_epochs = 5
 warmup_scheduler = LinearLR(optimizer, start_factor=0.1, total_iters=warmup_epochs)
 
 # Defines cosine scheduler to smooth decay and prevent overshooting
-cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=20 - warmup_epochs)
+cosine_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=80 - warmup_epochs)
 
 # Defines the scheduler using the warmup and cosine schedulers
 scheduler = SequentialLR(optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[warmup_epochs])

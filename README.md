@@ -1,4 +1,4 @@
-# Using CNNs for Vehicle Classification
+# Training a CNN to Classify Vehicle Types
 
 As a starter project for BVC, I decided to create a CNN that learns to classify various images of vehicle types. I also used a custom dataset I made by placing images of vehicles as the foreground onto a random 128 x 128 crop of a landscape background, then augmenting the images.
 
@@ -6,10 +6,12 @@ The onboarding document mentioned that it was important to track *how* I complet
 
 https://docs.google.com/document/d/1ROZzTwASKhRkDvESkVaY4mZ_gMYwPbnKHhf1rgN9YE8/edit?usp=sharing
 
-In summary, I first learned/refreshed what I needed to know before testing my knowledge by looking at a CNN trained on MNIST. From there, I challenged myself to build a CNN that was trained on CIFAR-10. Afterwards, I learned to create my own dataset and used what I learned building the CIFAR-10 to build the vehicle classification CNN. 
+In summary, I first learned/refreshed what I needed to know before testing my knowledge by looking at a CNN trained on MNIST. From there, I challenged myself to build a CNN that was trained on CIFAR-10. Afterwards, I learned to create my own dataset and used what I learned building the model trained on CIFAR-10 to build the vehicle classification CNN. 
 
 <!-- GETTING STARTED -->
 ## Getting Started
+
+NOTE: The readmeimgs folder consists of images for this README and are not important to the datasets.
 
 ### Prerequisites
 
@@ -20,6 +22,8 @@ This program runs on a environment using Python 3.11.0. I used venv to create th
     ```sh
     pip install torch torchvision tensorboard
     ```
+
+To run the vehicle classifier, run vehicle_classification_cnn.py. To run the model trained on CIFAR-10, run cifar10modelv6.py.
 
 ### Optional (But Recommended)
 
@@ -45,7 +49,7 @@ If you would like to create your own testing/training data using image_overlay.p
 
 I downloaded various images of motorcycles, cars, pickup trucks, and semi-trucks with transparent backgrounds. Since some of the backgrounds were not actually transparent, I put all of the images through a background remover website. I then wrote a script that scrapes landscape backgrounds from a website with no copyright images (https://unsplash.com). 
 
-The script downloads the desired number of images and takes a random 128 x 128 crop of the images. The script then takes a foreground vehicle image at random and pastes it onto a random background image. Here are some examples of generated images:
+The script downloads the desired number of images and takes a random 128 x 128 crop of the images. The script then takes a foreground vehicle image at random and pastes it onto a random background image. Here are some examples of generated images of a motorcycle, car, and pick-up truck (in that order):
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 ![Example Image 1](readmeimgs/synthetic_38.jpg)
@@ -122,6 +126,8 @@ I wanted to see if I could increase the accuracy to consistently stay above 80% 
 
 Despite the orange model still underperforming below 80% accuracy, but adjusting the cosine annealing helped the model. I removed the dropout rate of 0.3 after the ResNet block sequences but kept the adjusted cosine annealing. This seemed to work very well as depicted in the graphs below.
 
+Side Note: At one point, I tried to adjust the batch size to be smaller, but the model ended up not learning and plateauing at 33% accuracy. I ended up keeping the batch size as 64.
+
 ![accuracy1](readmeimgs/accuracy3.png)
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -139,4 +145,4 @@ The model consistently rested at the mid-80% accuracy mark and is the current mo
 
 A similar model to this proved to be successful when trained on CIFAR-10 by hovering consistently above 90% accuracy. I think for this current model to also break past 90% accuracy, I would have to add more vehicle foregrounds that it can train on, since currently there are only 40 for each class in the training data and 10 in the testing data. The testing data has 450 images total and the training data has 1500 images total. CIFAR-10 was considered a small dataset with 50,000 images total, meaning to increase the accuracy of the model I would have to look to adding more data to train on. However, the model currently seems to be decently effective at classifying the vehicles.
 
-For the future, I might try to see if I can visualize the latent space of the model using t-SNE or UMAP. This would allow to see what the model is seeing before logit is chosen.
+For the future, I might try to see if I can visualize the latent space of the model using t-SNE or UMAP. This would allow to see what the model is seeing before logit is chosen. Also, I used the same color normalization that was used on CIFAR-10, which might have led to some accuracy loss. I might also look into how to find the average color over each RGB for my dataset.

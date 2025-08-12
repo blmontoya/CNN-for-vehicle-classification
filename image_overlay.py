@@ -36,25 +36,35 @@ def paste_foreground_on_background(foreground_path, background_path, output_path
 
     # Scale foreground randomly (smaller than patch size)
     for _ in range(max_retries):
+        # Resized foreground
         scale = random.uniform(*resize_range)
         new_size = (int(fg.width * scale), int(fg.height * scale))
         fg_resized = fg.resize(new_size, Image.Resampling.LANCZOS)
 
+        # Max possible x and y coordinates in the image
         max_x = patch_size[0] - fg_resized.width
         max_y = patch_size[1] - fg_resized.height
 
+        # If foreground can fit onto the background, set the x and y coordinates
         if max_x >= 0 and max_y >= 0:
             fg = fg_resized
             x = random.randint(0, max_x)
             y = random.randint(0, max_y)
             break
+    # If the break was never reached in the if statement in the for loop,
+    # say that the foreground could not fit ontot he background
+    # (Should not be an issue since 128 x 128 is a small size compared to typical
+    # landscape image dimensions)
     else:
         print(f"Could not fit foreground {foreground_path} on background patch {background_path} after {max_retries} tries")
         return
 
+    # Generate a random float and flip the image horizontally if the float > 0.5
     if random.random() > 0.5:
         fg = fg.transpose(Image.FLIP_LEFT_RIGHT)
 
+    # Paste the image onto the background, convert to RGB to remove alpha/transparency,
+    # and save to the output path
     bg_patch.paste(fg, (x, y), fg)
     bg_patch = bg_patch.convert("RGB")
     bg_patch.save(output_path)
@@ -76,9 +86,12 @@ bg_size = (128, 128)  # define background size globally
 # 500 per class for training 150 per class for testing
 num_images = 150
 for i in range(num_images):
+    # Obtains a random foreground and background
     fg_path = random.choice(foregrounds)
     bg_path = random.choice(backgrounds)
+    # Sets a path to output to
     out_path = os.path.join(output_dir, f"synthetic_{i}.jpg")
+    # Attempts to place the foreground onto the background if possible
     try:
         paste_foreground_on_background(fg_path, bg_path, out_path, patch_size=bg_size)
     except ValueError as e:

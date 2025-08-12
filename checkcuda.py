@@ -1,3 +1,7 @@
+'''
+Script to make sure CUDA is installed
+'''
+
 import torch
 print(torch.cuda.is_available())
 print(torch.version.cuda)

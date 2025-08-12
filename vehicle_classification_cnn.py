@@ -36,29 +36,37 @@ test_transform = transforms.Compose([
 ])
 
 # Paths to training and testing data
-# print statements verify training and testing folders align (e.g., motorcycle=0 for both)
+# Print statements verify training and testing folders align (e.g., motorcycle=0 for both)
 train_dataset = ImageFolder(root='./customdata/train', transform=train_transform)
-print(train_dataset.class_to_idx)
+#print(train_dataset.class_to_idx)
 test_dataset = ImageFolder(root='./customdata/test', transform=test_transform)
-print(test_dataset.class_to_idx)
+#print(test_dataset.class_to_idx)
 
 # DataLoader used to load datasets, shuffles training data
 train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=4, pin_memory=True)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=2)
 
+# The Inception modules consists of a 1x1, 5x5, and a double 3x3 followed by a 
+# pooling branch. This inception module is heavily inspired by the ZeroToAll
+# PyTorch lectures by HKUST, which is listed in the Google Doc in the README
 class Inception(nn.Module):
 
     def __init__(self, in_channels):
         super(Inception, self).__init__()
+
+        # First, pass in a 1x1 to reduce the number of channels
         self.branch1x1 = nn.Conv2d(in_channels, 16, kernel_size=1)
 
+        # 1x1 then a 5x5
         self.branch5x5_1 = nn.Conv2d(in_channels, 16, kernel_size=1)
         self.branch5x5_2 = nn.Conv2d(16, 24, kernel_size=5, padding=2)
 
+        # 1x1 then a double 3x3, which is similar to a 5x5
         self.branch3x3dbl_1 = nn.Conv2d(in_channels, 16, kernel_size=1)
         self.branch3x3dbl_2 = nn.Conv2d(16, 24, kernel_size=3, padding=1)
         self.branch3x3dbl_3 = nn.Conv2d(24, 24, kernel_size=3, padding=1)
 
+        # Pooling branch conducts an average pool
         self.branch_pool = nn.Conv2d(in_channels, 24, kernel_size=1)
 
         # 16 + 24 + 24 + 24 = 88 channel output
@@ -76,17 +84,23 @@ class Inception(nn.Module):
         branch_pool = F.avg_pool2d(x, kernel_size=3, stride=1, padding=1)
         branch_pool = self.branch_pool(branch_pool)
 
+        # Outputs as a list of branches, then concatenate along the channel dimension
         outputs = [branch1x1, branch5x5, branch3x3dbl, branch_pool]
         return torch.cat(outputs, 1)
 
+# This Residual Block class is inspired by the various projects such as 
+# ResNet-18, which helps to avoid vanishing gradients and train the CNN deeper
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, downsample=False):
         super(ResidualBlock, self).__init__()
+        # If downsampling, spatial resolution is cut in half
         stride = 2 if downsample else 1
 
+        # Main residual branch
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
+        # Another 3x3 conv which keeps the channels the same, then batch norm
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(out_channels)
         #self.dropout = nn.Dropout(0.3)
@@ -100,16 +114,23 @@ class ResidualBlock(nn.Module):
             )
 
     def forward(self, x):
+        # Prepares the shortcut version if needed
         identity = self.shortcut(x)
+
+        # Pass through the first conv -> batch norm -> RelU
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
         #out = self.dropout(out)
 
+        # Pass through second conv -> batch norm
         out = self.conv2(out)
         out = self.bn2(out)
 
+        # Adds shortcut branch to the main branch element-wise
         out += identity
+
+        # Final activation and return
         out = self.relu(out)
         return out
 
@@ -146,9 +167,17 @@ class LabelSmoothingLoss(nn.Module):
         self.smoothing = smoothing
 
     def forward(self, pred, target):
+        # Sets correct label probability to 0.9
         confidence = 1.0 - self.smoothing
+
+        # raw outputs are converted to log probabilities
         log_probs = F.log_softmax(pred, dim=-1)
+
+        # Tensor with the same shape as log_probs filled with zeros
         true_dist = torch.zeros_like(log_probs)
+
+        # Obtains cross-entropy between smoothed target distribution and the model's
+        # predicted distribution
         true_dist.fill_(self.smoothing / (log_probs.size(1) - 1))
         true_dist.scatter_(1, target.data.unsqueeze(1), confidence)
         return torch.mean(torch.sum(-true_dist * log_probs, dim=-1))
@@ -165,13 +194,14 @@ class Net(nn.Module):
         # Defines ReLU algorithm
         self.relu = nn.ReLU(inplace=True)
 
-        # Defines first convolutional layer with an input of 3 -> 64. Kernel is 3x3 
+        # Defines first convolutional layer with an input of 3 -> 32. Kernel is 3x3 
         # as inspired by ResNet-18 with a padding of 1 for all convolutional layers
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
-        # Inputs 64 -> 128, same kernel size and padding
+        # Inputs 32 -> 64, same kernel size and padding
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
-        # Inputs 128 -> 256, same kernel size and padding
+        # Inputs 64 -> 128, same kernel size and padding
         self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        # Inputs 128 -> 256, same kernel size and padding
         self.conv4 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
 
         # Adding batch normalization that matches the output of each convolutional layer
@@ -192,18 +222,16 @@ class Net(nn.Module):
         self.incept3 = Inception(in_channels=128)
         self.incept4 = Inception(in_channels=256)
 
-
+        # Reducers and upscalers, meant to map to the desired number of outputs for
+        # each component after the inception module gives 88 outputs
         self.reduce1 = nn.Conv2d(88, 32, kernel_size=1)
         self.reduce2 = nn.Conv2d(88, 64, kernel_size=1)
         self.upscale1 = nn.Conv2d(88, 128, kernel_size=1)
         self.upscale2= nn.Conv2d(88, 256, kernel_size=1)
 
-
-
-
         # Pooling is 2x2, aka why feature map dimensions are halved (e.g., 10x10 -> 5x5)
         self.mp = nn.MaxPool2d(2)
-        # 88 * 5 * 5 = 2200 since 88 outputs of 5x5
+        # Retrieves the convolutional output given a 3 x 128 x 128 image
         conv_out_size = self._get_conv_output((3, 128, 128))
 
         # Defines rate of dropout
@@ -221,19 +249,27 @@ class Net(nn.Module):
             nn.Linear(512, 3)
         )
 
+    # Meant to determine the convolutional output given a shape
     def _get_conv_output(self, shape):
+        # Measures the output by creating a "fake" input tensor
         bs = 1
         input = torch.autograd.Variable(torch.rand(bs, *shape))
-        self.eval()  # set model to eval mode so batchnorm uses running stats
+        # Model is set into evaluation mode
+        self.eval()
+        # Disables gradient and rusn the "fake" input throught the forward features
+        # of the model
         with torch.no_grad():
             output_feat = self._forward_features(input)
-        self.train()  # set back to train mode
+        # Sets the model back into training mode
+        self.train() 
+        # Flattens output and gets the number of features
         n_size = output_feat.data.view(bs, -1).size(1)
         return n_size
     
     # Forward_features organizes the core structure of the CNN into a method into a 
     # calleable method. Each component goes in the order of convolutional layer -> 
-    # batch norm -> ReLU -> Max Pooling -> ResBlock sequence
+    # batch norm -> ReLU -> Max Pooling -> ResBlock sequence -> inception module -> 
+    # convolutional layer. See README CNN Creation for more details.
     def _forward_features(self, x):
         # First component
         x = self.conv1(x)
@@ -315,15 +351,22 @@ loss_fn = LabelSmoothingLoss(smoothing=0.1)
 # Defines the writer to record data such as learning rate, loss, and accuracy to TensorBoard
 writer = SummaryWriter()
 
+# Training and testing methods were inspired by the ZeroToAll PyTorch lectures
+# from HKUST, which can be found in the Google Doc in the README
+
 '''
 Defines the training process for the CNN
 '''
 def train(epoch):
+    # Sets into training mode and sets a count to average loss later
     model.train()
     total_loss = 0
     
+    # Loops through the batches from the train loader
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
+
+        # Forward and backward passes
         optimizer.zero_grad()
         output = model(data)
 
@@ -331,16 +374,22 @@ def train(epoch):
         loss.backward()
         optimizer.step()
 
+        # Accrues loss
         total_loss += loss.item()
         
+        # Prints progress after every 100 batches 
+        # (this was mainly used in the model trained on CIFAR-10, the dataset here
+        # does not have enough data for 100 batches)
         if batch_idx % 100 == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                 100. * batch_idx / len(train_loader), loss.item()))
-            
+    
+    # Computes and tracks avg loss with TensorBoard
     avg_loss = total_loss / len(train_loader)
     writer.add_scalar('Loss/train', avg_loss, epoch)
 
+    # Retrieves and tracks learning rate using TensorBoard
     current_lr = optimizer.param_groups[0]['lr']
     writer.add_scalar('LearningRate', current_lr, epoch)
 
@@ -348,30 +397,41 @@ def train(epoch):
 Defines the testing process for the CNN
 '''
 def test():
+    # Sets into evaluation mode and sets a count for test loss and
+    # correct count later
     model.eval()
     test_loss = 0
     correct = 0
 
+    # Loops over the batches from the test loader
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
-            # sum up batch loss
+
+            # Sum up batch loss
             test_loss += loss_fn(output, target).item() * data.size(0)
-            # get the index of the max log-probability
+            # Get the index of the max log-probability
             pred = output.argmax(dim=1, keepdim=True)
+            # Counts how many predictions match the true labels
             correct += pred.eq(target.view_as(pred)).sum().item()
 
+    # Averages test loss and accuracy
     test_loss /= len(test_loader.dataset)
     accuracy = 100. * correct / len(test_loader.dataset)
 
+    # Prints progress after every 100 batches 
+    # (this was mainly used in the model trained on CIFAR-10, the dataset here
+    # does not have enough data for 100 batches)
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
     
+    # Tracks test loss and accuracy using TensorBoard
     writer.add_scalar('Loss/test', test_loss, epoch)
     writer.add_scalar('Accuracy/test', accuracy, epoch)
 
+# Main training loop, which trains for 85 epochs
 if __name__ == '__main__':
     for epoch in range(1, 86):
         train(epoch)

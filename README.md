@@ -79,7 +79,7 @@ My model was heavily inspired by the model I made for the CIFAR-10 dataset. This
 
 Components 1-4 go in the order 3 -> 32, 32 -> 64, 64 -> 128, 128 -> 256. Note that the inception module produces 88 outputs, so the final convolutional layer in the component accounts for this. For example, say we wanted 32 -> 64. The model goes 32 -> 64, then 64 -> 88 in the inception module, and then 88 -> 64. The first convolutional layer in the component has a 3x3 kernel while the second has a 1x1 kernel. 
 
-Also, the residual block sequence has 2 ResNet blocks each and max pooling is 2x2. 
+Also, the residual block sequence has 2 ResNet blocks each and max pooling is 2x2. The GPU used for this model was an RTX 3060.
 
 ### Final Classification
 
